@@ -13,6 +13,7 @@ Protocol:
 
     Volume status notification, GATT handle 0x0006:
         BB EC 66 00 02 1E <level 0x00-0x1e> <checksum>
+        (MR3-specific: 0x1E / 30 is the maximum volume; may differ on other models)
 
 Usage:
     python3 mr3_volume.py <mac_address> set <0-30>
@@ -23,6 +24,7 @@ import sys
 
 from bleak import BleakClient
 
+# MR3-specific: control-service UUIDs observed on the Edifier MR3. Unverified on other models.
 VOLUME_HANDLE_WRITE = "48090002-1a48-11e9-ab14-d663bd873d93"
 VOLUME_HANDLE_NOTIFY = "48090001-1a48-11e9-ab14-d663bd873d93"
 
@@ -40,6 +42,7 @@ def build_packet(cmd, data=b""):
 
 
 async def set_volume(address, level):
+    # MR3-specific: volume range is 0-30. Other models may differ.
     if not 0 <= level <= 30:
         raise ValueError("Volume level must be 0-30")
     packet = build_packet(CMD_SET_VOLUME, bytes([level]))
@@ -55,6 +58,7 @@ async def get_volume(address):
     def handle_notify(_, data: bytearray):
         # Expect (on the 48090001... notify characteristic):
         # bb ec 66 00 02 1e <level> <checksum>
+        # MR3-specific: 0x1e (30) is the maximum volume, so it may differ on other models.
         if len(data) >= 7 and data[0] == 0xBB and data[2] == CMD_GET_VOLUME:
             result["level"] = data[6]
             event.set()
@@ -65,6 +69,7 @@ async def get_volume(address):
         await client.write_gatt_char(VOLUME_HANDLE_WRITE, packet, response=False)
         try:
             await asyncio.wait_for(event.wait(), timeout=5.0)
+            # MR3-specific: volume range is 0-30. Other models may differ.
             print(f"Current volume: {result['level']} / 30")
         except asyncio.TimeoutError:
             print("No response received (timed out waiting for notification)")

@@ -43,6 +43,7 @@ MQTT_USERNAME = os.environ.get("MQTT_USERNAME") or None
 MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD") or None
 
 # ---------------------------------------------------------------------------
+# MR3-specific: control-service UUIDs observed on the Edifier MR3. Unverified on other models.
 CHAR_WRITE = "48090002-1a48-11e9-ab14-d663bd873d93"
 CHAR_NOTIFY = "48090001-1a48-11e9-ab14-d663bd873d93"
 
@@ -92,6 +93,7 @@ class MR3Bridge:
         await self.ble_client.write_gatt_char(CHAR_WRITE, packet, response=False)
 
     async def set_volume(self, level: int):
+        # MR3-specific: volume range is 0-30. Other models may differ.
         level = max(0, min(30, level))
         await self.ensure_ble_connected()
         packet = build_packet(CMD_SET_VOLUME, bytes([level]))
@@ -135,12 +137,14 @@ class MR3Bridge:
 
     async def publish_discovery(self, client):
         config = {
+            # MR3 labels: change these if you adapt the bridge to another speaker.
             "name": "Edifier MR3 Volume",
             "unique_id": "edifier_mr3_volume",
             "command_topic": TOPIC_SET,
             "state_topic": TOPIC_STATE,
             "availability_topic": TOPIC_AVAILABILITY,
             "min": 0,
+            # MR3-specific: volume range is 0-30. Other models may differ.
             "max": 30,
             "step": 1,
             "mode": "slider",

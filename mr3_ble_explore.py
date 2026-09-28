@@ -23,7 +23,7 @@ from bleak import BleakClient, BleakScanner
 
 
 async def scan():
-    print("Scanning 10s for BLE devices (look for Edifier/MR3)...")
+    print("Scanning 10s for BLE devices (the MR3 advertises as 'EDIFIER BLE')...")
     devices = await BleakScanner.discover(timeout=10.0)
     for d in devices:
         name = d.name or "(no name)"
